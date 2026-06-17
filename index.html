@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ハモリジェネレーター</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 44px 40px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            font-size: 1.7rem;
+            color: #1a1a2e;
+            margin-bottom: 6px;
+        }
+        .subtitle {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+        }
+        .drop-zone {
+            border: 2px dashed #c0c8d8;
+            border-radius: 14px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+            background: #fafbfc;
+        }
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #667eea;
+            background: #f3f1ff;
+        }
+        .drop-zone .icon { font-size: 2.4rem; margin-bottom: 10px; }
+        .drop-zone .hint { color: #999; font-size: 0.85rem; line-height: 1.6; }
+        .drop-zone .filename {
+            color: #667eea;
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+        .row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            flex: 1;
+            margin-bottom: 20px;
+        }
+        .row .form-group { margin-bottom: 0; }
+        label.field-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: 8px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #e0e6ef;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            background: white;
+            cursor: pointer;
+            appearance: auto;
+            color: #222;
+        }
+        select:focus { outline: none; border-color: #667eea; }
+        .radio-group {
+            display: flex;
+            gap: 8px;
+        }
+        .radio-label {
+            flex: 1;
+            text-align: center;
+            padding: 9px;
+            border: 1.5px solid #e0e6ef;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #555;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .radio-label input { display: none; }
+        .radio-label.selected {
+            border-color: #667eea;
+            background: #f3f1ff;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-top: 8px;
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:disabled { background: #c8cfe0; cursor: not-allowed; transform: none; }
+        .btn-download {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            margin-top: 12px;
+            display: none;
+        }
+        .btn-download:hover { opacity: 0.9; transform: translateY(-1px); }
+        .status {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 14px;
+            min-height: 1.2em;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>🎵 ハモリジェネレーター</h1>
+    <p class="subtitle">メロディMIDIをアップロードしてハモリを自動生成</p>
+
+    <div class="drop-zone" id="dropZone">
+        <div class="icon">🎹</div>
+        <p class="hint">MIDIファイルをここにドラッグ＆ドロップ<br>またはクリックして選択</p>
+        <p class="filename" id="fileName"></p>
+        <input type="file" id="fileInput" accept=".mid,.midi" style="display:none">
+    </div>
+
+    <div class="row">
+        <div class="form-group">
+            <label class="field-label">キー</label>
+            <select id="keySelect">
+                <option>C</option><option>C#</option><option>D</option>
+                <option>D#</option><option>E</option><option>F</option>
+                <option>F#</option><option>G</option><option>G#</option>
+                <option>A</option><option>A#</option><option>B</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="field-label">スケール</label>
+            <div class="radio-group">
+                <label class="radio-label selected" id="lbl-major">
+                    <input type="radio" name="scale" value="major" checked>メジャー
+                </label>
+                <label class="radio-label" id="lbl-minor">
+                    <input type="radio" name="scale" value="minor">マイナー
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="field-label">ハモリタイプ</label>
+        <select id="harmonySelect">
+            <option value="2">3度上（定番・明るめ）</option>
+            <option value="5">6度上（ふわっと・柔らか）</option>
+            <option value="-2">3度下（落ち着き・渋め）</option>
+            <option value="4">5度上（力強い・厚め）</option>
+        </select>
+    </div>
+
+    <button class="btn btn-primary" id="generateBtn" disabled>ハモリを生成する</button>
+    <button class="btn btn-download" id="downloadBtn">⬇ ハモリMIDIをダウンロード</button>
+    <p class="status" id="status">MIDIファイルを選択してください</p>
+</div>
+
+<script type="module">
+import { Midi } from 'https://esm.sh/@tonejs/midi';
+
+// ─── 音楽理論 ──────────────────────────────────────────────
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const SCALES = {
+    major: [0, 2, 4, 5, 7, 9, 11],
+    minor: [0, 2, 3, 5, 7, 8, 10],
+};
+
+function buildScale(rootName, scaleType) {
+    const root = NOTE_NAMES.indexOf(rootName);
+    const intervals = SCALES[scaleType];
+    const notes = new Set();
+    for (let oct = 0; oct < 11; oct++) {
+        for (const iv of intervals) {
+            const n = oct * 12 + root + iv;
+            if (n >= 0 && n <= 127) notes.add(n);
+        }
+    }
+    return [...notes].sort((a, b) => a - b);
+}
+
+function findHarmonyNote(melodyNote, scale, steps) {
+    let idx = scale.indexOf(melodyNote);
+    if (idx === -1) {
+        idx = scale.reduce((best, _, i) =>
+            Math.abs(scale[i] - melodyNote) < Math.abs(scale[best] - melodyNote) ? i : best, 0);
+    }
+    const target = idx + steps;
+    if (target >= 0 && target < scale.length) return scale[target];
+    return null;
+}
+
+function generateHarmony(arrayBuffer, rootNote, scaleType, steps) {
+    const midi = new Midi(arrayBuffer);
+    const out = new Midi();
+    out.header.tempos = midi.header.tempos;
+    out.header.timeSignatures = midi.header.timeSignatures;
+
+    const scale = buildScale(rootNote, scaleType);
+
+    for (const track of midi.tracks) {
+        // 元トラックをそのままコピー
+        const origTrack = out.addTrack();
+        origTrack.name = track.name;
+        for (const note of track.notes) {
+            origTrack.addNote({
+                midi: note.midi,
+                time: note.time,
+                duration: note.duration,
+                velocity: note.velocity,
+            });
+        }
+
+        // ハモリトラックを追加
+        if (track.notes.length > 0) {
+            const harmTrack = out.addTrack();
+            harmTrack.name = (track.name || 'Melody') + ' Harmony';
+            for (const note of track.notes) {
+                const h = findHarmonyNote(note.midi, scale, steps);
+                if (h !== null) {
+                    harmTrack.addNote({
+                        midi: h,
+                        time: note.time,
+                        duration: note.duration,
+                        velocity: Math.max(0.01, note.velocity * 0.75),
+                    });
+                }
+            }
+        }
+    }
+
+    return out.toArray();
+}
+
+// ─── UI ──────────────────────────────────────────────────────
+let midiBuffer = null;
+let outputFilename = 'melody_harmony.mid';
+
+const dropZone   = document.getElementById('dropZone');
+const fileInput  = document.getElementById('fileInput');
+const fileName   = document.getElementById('fileName');
+const generateBtn= document.getElementById('generateBtn');
+const downloadBtn= document.getElementById('downloadBtn');
+const status     = document.getElementById('status');
+
+// ラジオボタンのビジュアル切替
+document.querySelectorAll('input[name="scale"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        document.getElementById('lbl-major').classList.toggle('selected', radio.value === 'major' ? radio.checked : !radio.checked);
+        document.getElementById('lbl-minor').classList.toggle('selected', radio.value === 'minor' ? radio.checked : !radio.checked);
+    });
+});
+document.querySelectorAll('.radio-label').forEach(lbl => {
+    lbl.addEventListener('click', () => {
+        const input = lbl.querySelector('input');
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+});
+
+// ドラッグ＆ドロップ
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) loadFile(fileInput.files[0]);
+});
+
+function loadFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+        midiBuffer = e.target.result;
+        fileName.textContent = '📄 ' + file.name;
+        outputFilename = file.name.replace(/\.(mid|midi)$/i, '_harmony.mid');
+        generateBtn.disabled = false;
+        downloadBtn.style.display = 'none';
+        status.textContent = 'ファイルを読み込みました';
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// 生成
+generateBtn.addEventListener('click', () => {
+    if (!midiBuffer) return;
+    const rootNote  = document.getElementById('keySelect').value;
+    const scaleType = document.querySelector('input[name="scale"]:checked').value;
+    const steps     = parseInt(document.getElementById('harmonySelect').value);
+
+    try {
+        status.textContent = '生成中…';
+        generateBtn.disabled = true;
+
+        const result = generateHarmony(midiBuffer, rootNote, scaleType, steps);
+        const blob   = new Blob([result], { type: 'audio/midi' });
+        const url    = URL.createObjectURL(blob);
+
+        downloadBtn.style.display = 'block';
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = url; a.download = outputFilename; a.click();
+        };
+
+        status.textContent = '完成！ダウンロードボタンを押してください ✨';
+        generateBtn.disabled = false;
+    } catch (err) {
+        status.textContent = 'エラー: ' + err.message;
+        generateBtn.disabled = false;
+        console.error(err);
+    }
+});
+</script>
+</body>
+</html>
